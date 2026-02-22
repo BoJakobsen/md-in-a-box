@@ -26,6 +26,10 @@ WARMUP_STEPS = 2000
 SIM_STEPS = 5000
 NPLOT = 20           # Update plot every N steps (0 to disable)
 
+# Moving box: constant box frame velocity (set both to 0.0 to disable)
+BOX_VEL_X = 0.0   # Box velocity in x (pixels/step)
+BOX_VEL_Y = 0.0   # Box velocity in y (pixels/step)
+
 # --- Setup ---
 sim = MDSimulation(
     n_atoms_x=NX, n_atoms_y=NY,
@@ -35,6 +39,7 @@ sim = MDSimulation(
 )
 
 print(f"N={sim.n_atoms} atoms ({NX}x{NY}), box={BOX_X}x{BOX_Y}, T_target={TEMPERATURE}")
+sim.set_box_vel([BOX_VEL_X, BOX_VEL_Y])
 
 # Try to import matplotlib for plotting
 _can_plot = False

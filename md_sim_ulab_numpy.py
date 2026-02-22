@@ -57,7 +57,14 @@ class MDSimulation:
             box_size_y: Box height in pixels
             temperature: Target temperature for Langevin thermostat
             seed: Random seed (default 12345)
+
+        Key attributes after init:
+            box_vel: [vx, vy] box frame velocity, used by accelerometer integration
         """
+
+        _dtype = np.float64 if hasattr(np, 'float64') else np.float
+        self._dtype = _dtype
+
         self.t = 0.0
         self.Nsteps = 0
         self.n_atoms_x = n_atoms_x
@@ -67,6 +74,13 @@ class MDSimulation:
         self.box_size_x = box_size_x
         self.box_size_y = box_size_y
         self.target_temp = temperature
+
+        # Gravity
+        self.gravity_x = 0.0
+        self.gravity_y = 0.005
+
+        # Box velocity
+        self.box_vel = np.zeros(2, dtype=_dtype)  # Box velocity [vx, vy]
 
         # Random number generator (different API for ulab vs numpy)
         if seed is None:
@@ -78,7 +92,7 @@ class MDSimulation:
             self.rng.normal()
         else:
             self.rng = np.random.default_rng(seed)
-        
+
         # Lennard-Jones parameters (pixel-based units)
         self.sigma = 2 * self.atom_size  # Particle diameter
         self.epsilon = 1.0  # LJ energy scale
@@ -101,13 +115,7 @@ class MDSimulation:
         self.langevin_friction = 0.01
         self._update_thermostat()
 
-        # Gravity
-        self.gravity_x = 0.0
-        self.gravity_y = 0.005
-
         # Particle data as separate 1D arrays (faster than 2D indexing in ulab)
-        _dtype = np.float64 if hasattr(np, 'float64') else np.float
-        self._dtype = _dtype
         self.pos_x = np.zeros(self.n_atoms, dtype=_dtype)
         self.pos_y = np.zeros(self.n_atoms, dtype=_dtype)
         self.vel_x = np.zeros(self.n_atoms, dtype=_dtype)
@@ -181,15 +189,13 @@ class MDSimulation:
         tmp = tmp * tmp
         tmp = tmp * tmp * tmp
         fy -= eps_w / tmp
-        
+
         # LJ pair forces - O(N^2) loop over all pairs
         cutoff_sq = self.cutoff_sq
         c12 = self.lj_c12
         c6 = self.lj_c6
         n_atoms = self.n_atoms
 
-
-        
         for i in range(n_atoms):
             for j in range(i + 1, n_atoms):
                 dx = px[j] - px[i]
@@ -225,23 +231,44 @@ class MDSimulation:
         fx += self.gravity_x
         fy += self.gravity_y
 
+        # Clamp forces to prevent overflow
+        max_force = 1.0e6
+        fx[:] = np.minimum(np.maximum(fx, -max_force), max_force)
+        fy[:] = np.minimum(np.maximum(fy, -max_force), max_force)
+
     def step(self):
         """Perform one Leap Frog integration step.
 
         Leap Frog scheme:
-          1. x(t+dt) = x(t) + v(t+dt/2) * dt
-          2. F(t+dt) = forces at new positions
-          3. v(t+3dt/2) = v(t+dt/2) + F(t+dt) * dt
+          1. x(t+dt) = x(t) + v(t+dt/2) * dt - box_vel (moving frame)
+          2. Emergency hard wall: clamp and reflect
+          3. F(t+dt) = forces at new positions
+          4. v(t+3dt/2) = v(t+dt/2) + F(t+dt) * dt
         """
         self.t += self.dt
         self.Nsteps += 1
         dt = self.dt
-        
-        # Step 1: Update positions
-        self.pos_x += self.vel_x * dt
-        self.pos_y += self.vel_y * dt
+        box_vel = self.box_vel
 
-        
+        # Step 1: Update positions (subtract box velocity for moving frame)
+        self.pos_x += self.vel_x * dt - box_vel[0]
+        self.pos_y += self.vel_y * dt - box_vel[1]
+
+        # Emergency hard wall: clamp positions and reflect velocities
+        margin = 1.0
+        mask = self.pos_x < margin
+        self.pos_x[mask] = margin
+        self.vel_x[mask] = np.abs(self.vel_x[mask])
+        mask = self.pos_x > self.box_size_x - margin
+        self.pos_x[mask] = self.box_size_x - margin
+        self.vel_x[mask] = -np.abs(self.vel_x[mask])
+        mask = self.pos_y < margin
+        self.pos_y[mask] = margin
+        self.vel_y[mask] = np.abs(self.vel_y[mask])
+        mask = self.pos_y > self.box_size_y - margin
+        self.pos_y[mask] = self.box_size_y - margin
+        self.vel_y[mask] = -np.abs(self.vel_y[mask])
+
         # Step 2: Calculate forces (includes thermostat and gravity)
         self._calculate_forces()
 
@@ -280,6 +307,18 @@ class MDSimulation:
         """Get Langevin friction coefficient."""
         return self.langevin_friction
 
+    def get_gravity(self):
+        """Get gravity acceleration."""
+        return self.gravity_x, self.gravity_y
+
+    def set_box_vel(self, vel):
+        """Set box velocity [vx, vy] for moving frame (accelerometer integration)."""
+        self.box_vel = np.array(vel, dtype=self._dtype)
+
+    def get_box_vel(self):
+        """Get box velocity [vx, vy]."""
+        return self.box_vel
+
 
 # Simple test when run directly
 if __name__ == "__main__":
@@ -302,7 +341,7 @@ if __name__ == "__main__":
     print(f"dt: {sim.dt}")
     print(f"Initial temperature: {sim.get_temperature():.3f}")
     print(f"Langevin friction: {sim.langevin_friction:.4f}")
-    
+
     # Use ticks_ms if available (MicroPython), else time.time()
     if hasattr(time, 'ticks_ms'):
         start_time = time.ticks_ms()
@@ -311,7 +350,7 @@ if __name__ == "__main__":
 
     n_steps = 500
     print_every = 50
-    
+
     for step in range(n_steps):
         sim.step()
         if step % print_every == 0:
