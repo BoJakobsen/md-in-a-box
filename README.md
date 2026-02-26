@@ -3,6 +3,10 @@
 Interactive 2D molecular dynamics simulation running on a Raspberry Pi Pico 2.
 Based on the browser-based MD simulation by Ulf R. Pedersen: https://urp.dk/md/
 
+| Liquid phase | Crystal phase |
+|:---:|:---:|
+| ![Liquid](assets/liquid_small.jpg) | ![Crystal](assets/crystal_small.jpg) |
+
 ---
 
 ## Physics
@@ -158,7 +162,8 @@ mpremote run run_show_sim_ulab_user_c_func_dual_core_pico_dislay.py
 - Ulf R. Pedersen's browser MD simulation: https://urp.dk/md/
 - ulab (numpy for MicroPython): https://github.com/v923z/micropython-ulab
 - Pimoroni Pico libraries: https://github.com/pimoroni/pimoroni-pico
-- Micropython-bno055: https://github.com/micropython-IMU/micropython-bno055
+- MicroPython-bno055: https://github.com/micropython-IMU/micropython-bno055
+
 ---
 
 ## License
