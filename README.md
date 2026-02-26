@@ -5,7 +5,7 @@ Based on the browser-based MD simulation by Ulf R. Pedersen: https://urp.dk/md/
 
 | Liquid phase | Crystal phase |
 |:---:|:---:|
-| ![Liquid](assets/liquid_small.jpg) | ![Crystal](assets/crystal_small.jpg) |
+| <img src="assets/liquid_small.jpg" width="400"> | <img src="assets/crystal_small.jpg" width="400"> |
 
 ---
 
