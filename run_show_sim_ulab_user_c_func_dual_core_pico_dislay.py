@@ -28,7 +28,7 @@ import _thread
 from pimoroni import Button, RGBLED
 from picographics import PicoGraphics, DISPLAY_PICO_DISPLAY_2, PEN_P8
 from md_sim_ulab_user_c_func import MDSimulation
-from bno055_handler import BNO055Handler, BNO055ConnectionError, BNO055LibraryNotFound
+from bno055_handler import BNO055Handler
 
 # ============================================================================
 # SIMULATE PARAMETERS

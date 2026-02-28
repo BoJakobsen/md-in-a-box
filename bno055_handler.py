@@ -6,21 +6,6 @@
 import machine
 import math
 
-class BNO055Error(Exception):
-    """Base exception for BNO055 handler errors."""
-    pass
-
-
-class BNO055LibraryNotFound(BNO055Error):
-    """Raised when the bno055 library is not available."""
-    pass
-
-
-class BNO055ConnectionError(BNO055Error):
-    """Raised when cannot connect to the BNO055 chip."""
-    pass
-
-
 class BNO055Handler:
     """
     Wrapper class for BNO055 accelerometer.
@@ -30,7 +15,7 @@ class BNO055Handler:
     """
 
     # For this project we use non default pins
-    DEFAULT_SDA_PIN = 0 #
+    DEFAULT_SDA_PIN = 0
     DEFAULT_SCL_PIN = 1
     DEFAULT_I2C_ID = 0
     DEFAULT_ADDRESS = 0x28
@@ -51,9 +36,6 @@ class BNO055Handler:
             gravity_sign: Per-axis sign flip for gravity output, e.g. (-1, 1, 1)
             lin_acc_sign: Per-axis sign flip for lin_acc output, e.g. (1, -1, 1)
 
-        Raises:
-            BNO055LibraryNotFound: If bno055 library is not installed
-            BNO055ConnectionError: If cannot connect to BNO055 chip
         """
         self.sda_pin = sda_pin if sda_pin is not None else self.DEFAULT_SDA_PIN
         self.scl_pin = scl_pin if scl_pin is not None else self.DEFAULT_SCL_PIN
@@ -81,10 +63,9 @@ class BNO055Handler:
             from bno055 import BNO055
             self._BNO055 = BNO055
         except ImportError:
-            raise BNO055LibraryNotFound(
-                "bno055 library not found. "
-                "Please copy bno055.py and bno055_base.py to the device."
-            )
+            print( "bno055 library not found. ")
+            print("Please copy bno055.py and bno055_base.py to the device.")
+            return  # Early exit no need to continue.
 
     def _connect(self):
         """Attempt to connect to the BNO055 chip."""
@@ -96,28 +77,32 @@ class BNO055Handler:
                 scl=machine.Pin(self.scl_pin)
             )
         except Exception as e:
-            raise BNO055ConnectionError(f"Failed to create I2C bus: {e}")
+            print(f"Failed to create I2C bus: {e}")
+            return  # Early exit no need to continue.
 
         # Check if device is on the I2C bus
         devices = self._i2c.scan()
         if self.address not in devices:
             if devices:
-                raise BNO055ConnectionError(
-                    f"BNO055 not found at address 0x{self.address:02X}. "
-                    f"Found devices at: {[hex(d) for d in devices]}"
-                )
+                print(f"BNO055 not found at address 0x{self.address:02X}.")
+                print(f"Found devices at: {[hex(d) for d in devices]}")
+                return  # Early exit no need to continue.
             else:
-                raise BNO055ConnectionError(
-                    "No I2C devices found. Check wiring and connections."
-                )
+                print("No I2C devices found. Check wiring and connections.")
+                return  # Early exit no need to continue.
 
         # Try to initialize the BNO055
         try:
-            self._imu = self._BNO055(self._i2c, address=self.address,transpose = self.transpose, sign = self.sign)
+            self._imu = self._BNO055(self._i2c,
+                                     address=self.address,
+                                     transpose=self.transpose,
+                                     sign=self.sign)
         except RuntimeError as e:
-            raise BNO055ConnectionError(f"Failed to initialize BNO055: {e}")
+            print(f"Failed to initialize BNO055: {e}")
+            return  # Early exit no need to continue.
         except OSError as e:
-            raise BNO055ConnectionError(f"I2C communication error: {e}")
+            print(f"I2C communication error: {e}")
+            return  # Early exit no need to continue.
 
     @property
     def connected(self):
@@ -218,8 +203,8 @@ if __name__ == "__main__":
 
     print("Testing BNO055Handler...")
 
-    try:
-        handler = BNO055Handler()
+    handler = BNO055Handler()
+    if handler.connected:
         print("SUCCESS: Connected to BNO055")
 
         print("\nWaiting for calibration...")
@@ -237,7 +222,6 @@ if __name__ == "__main__":
                   f"Gravity (norm): ({norm_g[0]:5.2f}, {norm_g[1]:5.2f})")
             time.sleep(0.25)
 
-    except BNO055LibraryNotFound as e:
-        print(f"LIBRARY ERROR: {e}")
-    except BNO055ConnectionError as e:
-        print(f"CONNECTION ERROR: {e}")
+    else:
+        print("Some error happened")
+
