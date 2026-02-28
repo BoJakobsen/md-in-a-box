@@ -138,16 +138,15 @@ class MDSimulation:
                 count += 1
 
     def _calculate_temperature(self):
-        """Calculate instantaneous temperature from kinetic energy.
-
-        Uses Ulf's convention: T = sum(v^2) / N
-        """
-        v_sq = np.sum(self.vel_x * self.vel_x) + np.sum(self.vel_y * self.vel_y)
+        """Calculate instantaneous temperature from kinetic energy."""
+        # Mean kinetic energy
+        v_sq = 1/2 * (np.sum(self.vel_x * self.vel_x) + np.sum(self.vel_y * self.vel_y))
+        # T = V_sq / N for 2D
         return v_sq / self.n_atoms
 
     def _update_thermostat(self):
         """Pre-calculate thermostat standard deviation."""
-        self.std = math.sqrt(self.langevin_friction * self.target_temp / self.dt)
+        self.std = math.sqrt(2 * self.langevin_friction * self.target_temp / self.dt)
 
     def _calculate_forces(self):
         """Calculate LJ pair forces and soft wall forces.
