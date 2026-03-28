@@ -8,9 +8,15 @@ all in real time on a handheld device.
 
 Based on the browser-based MD simulation by Ulf R. Pedersen: https://urp.dk/md/
 
-| Liquid phase | Crystal phase |
+| | |
 |:---:|:---:|
-| <img src="assets/liquid_small.jpg" width="400"> | <img src="assets/crystal_small.jpg" width="400"> |
+| <img src="assets/liquid_small.jpg" width="400"><br>*Liquid phase (monoatomic)* | <img src="assets/crystal_small.jpg" width="400"><br>*Crystal phase (monoatomic)* |
+| <img src="assets/binary_LJ_liquid_small.jpg" width="400"><br>*Binary LJ liquid phase* | <img src="assets/binary_LJ_crystal_small.jpg" width="400"><br>*Binary LJ crystal phase* |
+
+| | |
+|:---:|:---:|
+| <img src="assets/hardware_top.jpg" width="400"><br>*Top view* | <img src="assets/hardware_back.jpg" width="400"><br>*Back view with accelerometer* |
+
 
 ---
 
