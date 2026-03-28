@@ -15,7 +15,7 @@ Based on the browser-based MD simulation by Ulf R. Pedersen: https://urp.dk/md/
 
 | | |
 |:---:|:---:|
-| <img src="assets/hardware_top.jpg" width="400"><br>*Top view* | <img src="assets/hardware_back.jpg" width="400"><br>*Back view with accelerometer* |
+| <img src="assets/top_v2_small.jpg" width="400"><br>*Top view* | <img src="assets/back_v2_small.jpg" width="400"><br>*Back view with accelerometer* |
 
 
 ---
