@@ -27,8 +27,9 @@
 //|
 
 
-// Global state for random numbers
-// seed is hard coded for now
+// Global state for random numbers.
+// Seed is hard-coded; there is no Python-side API to reseed,
+// so the C RNG always starts from 12345 at power-on.
 static uint32_t rng_state = 12345;
 
 // Fast xorshift32 random generator Fixes problems with rand() on pimoroni build
@@ -48,16 +49,16 @@ static mp_float_t rand_uniform(void) {
 
 
 // Internal force calc function - not exposed to Python
-static void calc_forces_internal(
-    mp_float_t *px, mp_float_t *py,
-    mp_float_t *vx, mp_float_t *vy,
-    mp_float_t *fx, mp_float_t *fy,
-    mp_float_t cutoff_sq, mp_float_t c12, mp_float_t c6,
-    mp_float_t box_x, mp_float_t box_y, mp_float_t eps_w,
-    mp_float_t std, mp_float_t friction,
-    mp_float_t fgx, mp_float_t fgy,
-    size_t n_atoms
-) {
+static void calc_forces_internal(mp_float_t *px, mp_float_t *py, mp_float_t *vx,
+                                 mp_float_t *vy, mp_float_t *fx, mp_float_t *fy,
+                                 mp_float_t cutoff_sq, mp_float_t *c12,
+                                 mp_float_t *c6, mp_float_t box_x,
+                                 mp_float_t box_y, mp_float_t eps_w,
+                                 mp_float_t std, mp_float_t friction,
+                                 mp_float_t fgx, mp_float_t fgy,
+                                 size_t n_atoms,
+                                 size_t n_atomsA                                 
+                                 ) {
 
   // Zero forces before accumulating
   for(size_t i = 0; i < n_atoms; i++){
@@ -70,9 +71,7 @@ static void calc_forces_internal(
   
   // Left wall (x -> 0)
   for(size_t i = 0; i < n_atoms; i++){
-    mp_float_t dx = px[i] ;
-    // Simple debug print
-    //mp_printf(&mp_plat_print, "dx = %f\n", (double)dx);
+    mp_float_t dx = px[i];
     if (dx < (mp_float_t)0.5) {dx = (mp_float_t)0.5;}  // prevent singularity
     mp_float_t dx2 = dx * dx;  // x ^ 2
     mp_float_t dx6 = dx2 * dx2 * dx2;  // x ^ 6
@@ -107,8 +106,33 @@ static void calc_forces_internal(
     fy[i] -= eps_w / dy6;
   }
 
-  // Calculate LJ forces for all pairs
-    for(size_t i = 0; i < (size_t)n_atoms; i++){
+  // Calculate LJ forces for all pairs AA
+    for(size_t i = 0; i < (size_t)n_atomsA; i++){
+      for(size_t j = i+1; j < (size_t)n_atomsA; j++){
+
+	mp_float_t dx = px[j] - px[i];
+	mp_float_t dy = py[j] - py[i];
+	mp_float_t r2 = dx * dx + dy* dy;
+
+	if ((r2 < cutoff_sq) && (r2 > 0.01)){
+	  mp_float_t r6 = r2 * r2 * r2;
+	  mp_float_t r12 = r6 * r6;
+	  mp_float_t pre = (c12[0] / r12 + c6[0] / r6) / r2;
+
+	  mp_float_t f_x = pre * dx;
+	  mp_float_t f_y = pre * dy;
+
+	  fx[i] += f_x;
+	  fy[i] += f_y;
+	  fx[j] -= f_x;
+	  fy[j] -= f_y;
+        }
+      }
+    }
+
+  
+  // Calculate LJ forces for all pairs BB
+    for(size_t i = n_atomsA; i < (size_t)n_atoms; i++){
       for(size_t j = i+1; j < (size_t)n_atoms; j++){
 
 	mp_float_t dx = px[j] - px[i];
@@ -118,7 +142,7 @@ static void calc_forces_internal(
 	if ((r2 < cutoff_sq) && (r2 > 0.01)){
 	  mp_float_t r6 = r2 * r2 * r2;
 	  mp_float_t r12 = r6 * r6;
-	  mp_float_t pre = (c12 / r12 + c6 / r6) / r2;
+	  mp_float_t pre = (c12[1] / r12 + c6[1] / r6) / r2;
 
         
 	  mp_float_t f_x = pre * dx;
@@ -131,7 +155,35 @@ static void calc_forces_internal(
         }
       }
     }
-  //Apply Langevin thermostat: friction + random forces.
+
+  
+  // Calculate LJ forces for all pairs AB
+    for(size_t i = 0; i < (size_t)n_atomsA; i++){
+      for(size_t j = n_atomsA; j < (size_t)n_atoms; j++){
+
+	mp_float_t dx = px[j] - px[i];
+	mp_float_t dy = py[j] - py[i];
+	mp_float_t r2 = dx * dx + dy* dy;
+
+	if ((r2 < cutoff_sq) && (r2 > 0.01)){
+	  mp_float_t r6 = r2 * r2 * r2;
+	  mp_float_t r12 = r6 * r6;
+	  mp_float_t pre = (c12[2] / r12 + c6[2] / r6) / r2;
+
+
+	  mp_float_t f_x = pre * dx;
+	  mp_float_t f_y = pre * dy;
+
+	  fx[i] += f_x;
+	  fy[i] += f_y;
+	  fx[j] -= f_x;
+	  fy[j] -= f_y;
+        }
+      }
+    }
+
+  
+    //Apply Langevin thermostat: friction + random forces.
     if (friction > 0){ 
       for(size_t i = 0; i < n_atoms; i++){
 
@@ -139,9 +191,9 @@ static void calc_forces_internal(
         mp_float_t noise_x = (mp_float_t)2.0 * (rand_uniform() + rand_uniform() + rand_uniform() -(mp_float_t)1.5);
         mp_float_t noise_y = (mp_float_t)2.0 * (rand_uniform() + rand_uniform() + rand_uniform() - (mp_float_t)1.5);
 
-        // noise + friction is added
-        fx[i] += std *noise_x - friction * vx[i];
-        fy[i] += std *noise_y - friction * vy[i];
+        // Gaussian noise added; friction (damping) subtracted
+        fx[i] += std * noise_x - friction * vx[i];
+        fy[i] += std * noise_y - friction * vy[i];
       }
     }
   
@@ -166,29 +218,33 @@ static void calc_forces_internal(
 
 // Leap frog step
 static mp_obj_t user_lf_step(size_t n_args, const mp_obj_t *args) {
-    // NB! No type tests, will crash hard!
+    // NB! No input validation — wrong usage will crash hard.
+    // Assumptions: exactly 20 arguments; all position/velocity/force arrays
+    // are float dtype and have the same length (n_atoms); lj_c12 and lj_c6
+    // are 3-element float arrays [AA, BB, AB]; n_atomsA <= n_atoms.
 
-  
-/*  Call seq from Python 
-    self.pos_x,            # array, float
-    self.pos_y,            # array, float
-    self.vel_x,            # array, float
-    self.vel_y,            # array, float
-    self.force_x,          # array, float (changed in place)
-    self.force_y,          # array, float (changed in place)
-    self.cutoff_sq,        # float  
-    self.lj_c12,           # float 
-    self.lj_c6,            # float
-    self.box_size_x,       # int
-    self.box_size_y,       # int
-    self.epsilon_wall      # float
-    self.box_vel           # array float
-    self.dt,               # float
-    self.std,              # float
-    self.langevin_friction,# float
-    self.gravity_x,        # float
-    self.gravity_y,        # float
-    self.stride            # int
+
+    /*  Call seq from Python
+        self.pos_x,            # array, float
+        self.pos_y,            # array, float
+        self.vel_x,            # array, float
+        self.vel_y,            # array, float
+        self.force_x,          # array, float (changed in place)
+        self.force_y,          # array, float (changed in place)
+        self.cutoff_sq,        # float
+        self.lj_c12,           # array, float [AA, BB, AB]
+        self.lj_c6,            # array, float [AA, BB, AB]
+        self.box_size_x,       # int
+        self.box_size_y,       # int
+        self.epsilon_wall      # float
+        self.box_vel           # array float
+        self.dt,               # float
+        self.std,              # float
+        self.langevin_friction,# float
+        self.gravity_x,        # float
+        self.gravity_y,        # float
+        self.n_atomsA          # int 
+        self.stride            # int
    */
   
   
@@ -200,8 +256,8 @@ static mp_obj_t user_lf_step(size_t n_args, const mp_obj_t *args) {
   ndarray_obj_t *fx_obj = MP_OBJ_TO_PTR(args[4]);
   ndarray_obj_t *fy_obj = MP_OBJ_TO_PTR(args[5]);
   mp_float_t cutoff_sq = mp_obj_get_float(args[6]);
-  mp_float_t c12 = mp_obj_get_float(args[7]); 
-  mp_float_t c6 = mp_obj_get_float(args[8]); 
+  ndarray_obj_t *c12_obj =  MP_OBJ_TO_PTR(args[7]); 
+  ndarray_obj_t *c6_obj =  MP_OBJ_TO_PTR(args[8]); 
   mp_int_t box_x = mp_obj_get_int(args[9]);
   mp_int_t box_y = mp_obj_get_int(args[10]);
   mp_float_t eps_w = mp_obj_get_float(args[11]);
@@ -211,10 +267,10 @@ static mp_obj_t user_lf_step(size_t n_args, const mp_obj_t *args) {
   mp_float_t friction = mp_obj_get_float(args[15]);
   mp_float_t fgx = mp_obj_get_float(args[16]);
   mp_float_t fgy = mp_obj_get_float(args[17]);
-  mp_int_t stride = mp_obj_get_int(args[18]);
+  mp_int_t n_atomsA = mp_obj_get_int(args[18]);
+  mp_int_t stride = mp_obj_get_int(args[19]);
   
-
-  /* // get pointers to array data */
+  // Get pointers to array data
   mp_float_t *px = (mp_float_t *)px_obj->array;
   mp_float_t *py = (mp_float_t *)py_obj->array;
   mp_float_t *vx = (mp_float_t *)vx_obj->array;
@@ -222,6 +278,8 @@ static mp_obj_t user_lf_step(size_t n_args, const mp_obj_t *args) {
   mp_float_t *fx = (mp_float_t *)fx_obj->array;
   mp_float_t *fy = (mp_float_t *)fy_obj->array;
   mp_float_t *box_vel = (mp_float_t *)box_vel_obj->array;
+  mp_float_t *c12 = (mp_float_t *)c12_obj->array;
+  mp_float_t *c6  = (mp_float_t *)c6_obj->array;
   
   // number of atoms
   size_t n_atoms = px_obj->len;
@@ -244,8 +302,8 @@ static mp_obj_t user_lf_step(size_t n_args, const mp_obj_t *args) {
       if (py[i] > box_y - margin) { py[i] = box_y - margin; vy[i] = -fabs(vy[i]); }
     }
 
-    // step 2: update the forces from LJ interaction and walls (in place)
-    calc_forces_internal(px, py, vx, vy, fx, fy, cutoff_sq, c12, c6, box_x, box_y, eps_w, std, friction, fgx, fgy, n_atoms);
+    // Step 3: Update forces from LJ interactions, walls, thermostat, gravity (in-place)
+    calc_forces_internal(px, py, vx, vy, fx, fy, cutoff_sq, c12, c6, box_x, box_y, eps_w, std, friction, fgx, fgy, n_atoms, n_atomsA);
 																	      
     // Step 3: Update velocities
     for(size_t i = 0; i < n_atoms; i++){
@@ -253,14 +311,12 @@ static mp_obj_t user_lf_step(size_t n_args, const mp_obj_t *args) {
       vy[i] += fy[i] * dt;
     }
   }
-    // at the end, return noting as we do inline change to forces
+    // All arrays modified in-place; return None
     return mp_const_none;
 }
 
-MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(user_lf_step_obj,0 ,20, user_lf_step);
+MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(user_lf_step_obj, 20, 20, user_lf_step);
 
-
-// common to all functions
 
 // All exposed functions must be in this structure
 static const mp_rom_map_elem_t ulab_user_globals_table[] = {
