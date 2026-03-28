@@ -265,5 +265,5 @@ MIT — see `LICENSE`.
 
 ## Authors
 
-Bo Jakobsen, IMFUFA, Roskilde University (boj@ruc.dk)
+Bo Jakobsen, IMFUFA, Roskilde University (boj@ruc.dk) 
 Based on the browser-based MD simulation by Ulf R. Pedersen (urp@ruc.dk)
