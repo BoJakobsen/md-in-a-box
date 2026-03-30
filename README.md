@@ -17,8 +17,10 @@ Based on the browser-based MD simulation by Ulf R. Pedersen: https://urp.dk/md/
 |:---:|:---:|
 | <img src="assets/top_v2_small.jpg" width="400"><br>*Top view* | <img src="assets/back_v2_small.jpg" width="400"><br>*Back view with accelerometer* |
 
-
-<video src="assets/interacting.mp4" autoplay loop muted width=100%>a test</video>
+<video width="320" height="240" autoplay loop muted controls>
+  <source src="assets/interacting.mp4" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
 
 ---
 
