@@ -10,7 +10,7 @@ Based on the browser-based MD simulation by Ulf R. Pedersen: https://urp.dk/md/
 
 |Video demonstrations <br> (not automatically shown on Github) | |
 |:---:|:---:|
-| <video width="400" autoplay loop muted controls> <source src="assets/interacting.mp4" type="video/mp4"> Your browser does not support the video tag. </video> <br>* [Demonstration of physical interaction](assets/interacting.mp4)* | <video width="400" autoplay loop muted controls> <source src="assets/melting.mp4" type="video/mp4"> Your browser does not support the video tag. </video> <br>*[Demonstration of temperature change](assets/melting.mp4)* |
+| <video width="400" autoplay loop muted controls> <source src="assets/interacting.mp4" type="video/mp4"> Your browser does not support the video tag. </video> <br>*[Demonstration of physical interaction](assets/interacting.mp4)* | <video width="400" autoplay loop muted controls> <source src="assets/melting.mp4" type="video/mp4"> Your browser does not support the video tag. </video> <br>*[Demonstration of temperature change](assets/melting.mp4)* |
 
 |Exampel configurations | |
 |:---:|:---:|
