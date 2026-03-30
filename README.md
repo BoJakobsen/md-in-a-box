@@ -10,6 +10,7 @@ Based on the browser-based MD simulation by Ulf R. Pedersen: https://urp.dk/md/
 
 | | |
 |:---:|:---:|
+| <video width="400" autoplay loop muted controls> <source src="assets/interacting.mp4" type="video/mp4"> Your browser does not support the video tag. </video> | |
 | <img src="assets/liquid_small.jpg" width="400"><br>*Liquid phase (monoatomic)* | <img src="assets/crystal_small.jpg" width="400"><br>*Crystal phase (monoatomic)* |
 | <img src="assets/binary_LJ_liquid_small.jpg" width="400"><br>*Binary LJ liquid phase* | <img src="assets/binary_LJ_crystal_small.jpg" width="400"><br>*Binary LJ crystal phase* |
 
@@ -17,10 +18,7 @@ Based on the browser-based MD simulation by Ulf R. Pedersen: https://urp.dk/md/
 |:---:|:---:|
 | <img src="assets/top_v2_small.jpg" width="400"><br>*Top view* | <img src="assets/back_v2_small.jpg" width="400"><br>*Back view with accelerometer* |
 
-<video width="320" height="240" autoplay loop muted controls>
-  <source src="assets/interacting.mp4" type="video/mp4">
-  Your browser does not support the video tag.
-</video>
+
 
 ---
 
