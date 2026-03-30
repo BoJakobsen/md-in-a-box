@@ -10,7 +10,10 @@ Based on the browser-based MD simulation by Ulf R. Pedersen: https://urp.dk/md/
 
 | | |
 |:---:|:---:|
-| <video width="400" autoplay loop muted controls> <source src="assets/interacting.mp4" type="video/mp4"> Your browser does not support the video tag. </video> | <video width="400" autoplay loop muted controls> <source src="assets/melting.mp4" type="video/mp4"> Your browser does not support the video tag. </video> |
+| <video width="400" autoplay loop muted controls> <source src="assets/interacting.mp4" type="video/mp4"> Your browser does not support the video tag. </video>
+<br>*Demonstration of physical interaction* 
+| <video width="400" autoplay loop muted controls> <source src="assets/melting.mp4" type="video/mp4"> Your browser does not support the video tag. </video> 
+<br>*Demonstration of temperature change* |
 | <img src="assets/liquid_small.jpg" width="400"><br>*Liquid phase (monoatomic)* | <img src="assets/crystal_small.jpg" width="400"><br>*Crystal phase (monoatomic)* |
 | <img src="assets/binary_LJ_liquid_small.jpg" width="400"><br>*Binary LJ liquid phase* | <img src="assets/binary_LJ_crystal_small.jpg" width="400"><br>*Binary LJ crystal phase* |
 
